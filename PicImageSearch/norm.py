@@ -242,6 +242,7 @@ class SauceNaoNorm:
 
 class TraceMoeNorm:
     def __init__(self, data, mute, image_size):
+        self.origin: str = data
         self.filename: str = data['filename']  # The filename of file where the match is found
         self.episode: int = data['episode']  # The extracted episode number from filename
         self.From: int = data['from']  # Starting time of the matching scene (seconds)
