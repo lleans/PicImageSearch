@@ -25,13 +25,6 @@ class Search:
         self.session = session or aiohttp.ClientSession(loop=loop)
 
     @staticmethod
-    def _base_64(filename):
-        with open(filename, 'rb') as f:
-            coding = base64.b64encode(f.read())  # 读取文件内容，转换为base64编码
-            # print('本地base64转码~')
-            return coding.decode()
-
-    @staticmethod
     def _errors(code):
         if code == 404:
             return "Source down"
@@ -346,8 +339,13 @@ class Search:
                 else:
                     logger.error(self._errors(res.status))
             else:  # 是否是本地文件
-                img = self._base_64(url)
-                res = await self.session.post(TRACEMOE, json={"image": img, "filter": Filter}, **requests_kwargs)
+                m = FormData()
+                m.add_field(
+                    'image',
+                    open(url, 'rb'),
+                    content_type="multipart/form-data"
+                )
+                res = await self.session.post(TRACEMOE, params=params, data=m, **requests_kwargs)
                 if res.status == 200:
                     data = await res.json()
                     return TraceMoeResponse(data, mute, image_size)

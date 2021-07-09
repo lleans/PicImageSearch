@@ -260,7 +260,7 @@ class TraceMoeNorm:
         self.synonyms: list = data['anilist']['synonyms']  # Alternate english titles
         self.isAdult: bool = data['anilist']['isAdult']  # Whether the anime is for adults
         self.image: str = data['image'] + "&size=" + image_size
-        self.video: str = data['video'] + "&mute" if mute == True else ""
+        self.video: str = data['video'] + "&mute" if mute == True else data['video']
 
     @staticmethod
     def download_image(self, filename='image.png'):
