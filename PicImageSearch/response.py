@@ -102,21 +102,14 @@ class SauceNAOResponse:
 
 
 class TraceMoeResponse:
-    def __init__(self, resp, mute):
+    def __init__(self, resp, mute, image_size):
         self.raw: list = []
-        resp_docs = resp['docs']
-        for i in resp_docs:
-            self.raw.append(TraceMoeNorm(i, mute=mute))
-        self.origin: dict = resp
-        self.RawDocsCount: int = resp['RawDocsCount']  # 搜索的帧总数
-        self.RawDocsSearchTime: int = resp['RawDocsSearchTime']  # 从数据库检索帧所用的时间
-        self.ReRankSearchTime: int = resp['ReRankSearchTime']  # 比较帧所用的时间
-        self.CacheHit: bool = resp['CacheHit']  # 是否缓存搜索结果
-        self.trial: int = resp['trial']  # 搜索时间
-        self.limit: int = resp['limit']  # 剩余搜索限制数
-        self.limit_ttl: int = resp['limit_ttl']  # 限制重置之前的时间（秒）
-        self.quota: int = resp['quota']  # 剩余搜索配额数
-        self.quota_ttl: int = resp['quota_ttl']  # 配额重置之前的时间（秒）
+        resp_result = resp['result']
+        for i in resp_result:
+            self.raw.append(TraceMoeNorm(i, mute=mute, image_size=image_size))
+        self.origin: dict = resp # Raw data
+        self.frameCount: int = resp['frameCount']  # Total number of frames searched
+        self.error: str = resp['error'] # Error message 
 
     def __repr__(self):
         return (f'<TraceMoeResponse(count={repr(len(self.raw))}, RawDocsCount={repr(self.RawDocsCount)}, '

@@ -6,8 +6,7 @@ from aiohttp.formdata import FormData
 
 # System
 import base64
-from typing import Union
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 from PicImageSearch.response import Ascii2DResponse, GoogleResponse, IqdbResponse, SauceNAOResponse, TraceMoeResponse
 
 
@@ -16,7 +15,7 @@ class Search:
         self.header = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0'
         }
-        if lib not in ('asyncio', 'multio'):
+        if lib not in ('asyncio'):
             raise ValueError(
                 f"lib must be of type `str` and be either `asyncio' not '{lib if isinstance(lib, str) else lib.__class__.__name__}'")
         self._lib = lib
@@ -256,14 +255,14 @@ class Search:
         Params Keys
         -----------
         :param api_key: (str) Access key for SauceNAO (default=None)
-        :param output_type:(int) 0=normal (default) html 1=xml api (not implemented) 2=json api default=2
-        :param testmode:(int) Test mode 0=normal 1=test (default=0)
-        :param numres:(int) output number (default=5)
-        :param dbmask:(int) The mask used to select the specific index to be enabled (default=None)
-        :param dbmaski:(int) is used to select the mask of the specific index to be disabled (default=None)
-        :param db:(int)Search for a specific index number or all indexes (default=999), see https://saucenao.com/tools/examples/api/index_details.txt
-        :param minsim:(int)Control the minimum similarity (default=30)
-        :param hide:(int) result hiding control, none=0, clear return value (default)=1, suspect return value=2, all return value=3
+        :param output_type: (int) 0=normal (default) html 1=xml api (not implemented) 2=json api default=2
+        :param testmode: (int) Test mode 0=normal 1=test (default=0)
+        :param numres: (int) Output number (default=5)
+        :param dbmask: (int) The mask used to select the specific index to be enabled (default=None)
+        :param dbmaski: (int) Used to select the mask of the specific index to be disabled (default=None)
+        :param db: (int) Search for a specific index number or all indexes (default=999), see https://saucenao.com/tools/examples/api/index_details.txt
+        :param minsim: (int) Control the minimum similarity (default=30)
+        :param hide: (int) Result hiding control, none=0, clear return value (default)=1, suspect return value=2, all return value=3
         """
 
         SAUCENAO = 'https://saucenao.com/search.php'
@@ -304,7 +303,7 @@ class Search:
         except Exception as a:
             logger.info(a)
 
-    async def tracemoe(self, url, Filter=0, mute=False, **requests_kwargs):
+    async def tracemoe(self, url, Filter=0, mute=False, image_size="l", **requests_kwargs):
         """
         TraceMoe
         -----------
@@ -314,38 +313,36 @@ class Search:
         • .origin = Raw data from scrapper\n
         • .raw = Simplified data from scrapper\n
         • .raw[0] = First index of simplified data that was found\n
-        • .raw[0].title = First index of title that was found\n
+        • .raw[0].title = First index of title that was found (Json fromat)\n
         • .raw[0].title_english = First index of english title that was found\n
-        • .raw[0].title_chinese = First index of chinese title that was found\n
-        • .raw[0].video_thumbnail = First index of url video that was found\n
-        • .raw[0].thumbnail = First index of url image that was found\n
+        • .raw[0].video = First index of url video that was found\n
+        • .raw[0].image = First index of url image that was found\n
         • .raw[0].similarity = First index of similarity video that was found\n
         • .raw[0].From = First index of Starting time of the matching scene that was found\n
         • .raw[0].To = First index of Ending time of the matching scene that was found\n
-        • .raw[0].at = First index of Exact time of the matching scene that was found\n
         • .raw[0].anilist_id = First index of The matching AniList ID that was found\n
-        • .raw[0].season = First index of Season that was found\n
-        • .raw[0].anime = First index of Anime name that was found\n
-        • .raw.RawDocsCount = Total number of frames searched\n
-        • .raw.RawDocsSearchTime = Time taken to retrieve the frames from database (sum of all cores)\n
-        • .raw.ReRankSearchTime = Time taken to compare the frames (sum of all cores)\n
-        • .trial = Time taken to compare the frames (sum of all cores)
+
         Params Keys
         -----------
-        :param url: network address or local
-        :param Filter: The search is restricted to a specific Anilist ID (default none)
-        :param mute: Mute search results video (default False)
+        :param url: (str) Url or local image
+        :param Filter: (int) The search is restricted to a specific Anilist ID (default none)
+        :param mute: (boolean) Mute search results video (default False)
+        :param size: (str) Requests specific thumnail size "l" = large, "m" = "medium", "s" = "small"
         further documentation visit https://soruly.github.io/trace.moe/#/
         """
-        TRACEMOE = 'https://trace.moe/api/search'
+        TRACEMOE = 'https://api.trace.moe/search'
         try:
-            params = dict()
-            if url[:4] == 'http':  # 网络url
+            params = {
+                'anilistInfo': '',  # Makesure anilist info shows up to make easy get anime info
+                'cutBorders': '',  # To cut borders to make search more accurate
+                'anilistID': Filter  # Search for specific Anilist id
+            }
+            if url[:4] == 'http':  # Url image
                 params['url'] = url
                 res = await self.session.get(TRACEMOE, params=params, **requests_kwargs)
                 if res.status == 200:
                     data = await res.json()
-                    return TraceMoeResponse(data, mute)
+                    return TraceMoeResponse(data, mute, image_size)
                 else:
                     logger.error(self._errors(res.status))
             else:  # 是否是本地文件
@@ -353,7 +350,7 @@ class Search:
                 res = await self.session.post(TRACEMOE, json={"image": img, "filter": Filter}, **requests_kwargs)
                 if res.status == 200:
                     data = await res.json()
-                    return TraceMoeResponse(data, mute)
+                    return TraceMoeResponse(data, mute, image_size)
                 else:
                     logger.error(self._errors(res.status))
         except Exception as e:

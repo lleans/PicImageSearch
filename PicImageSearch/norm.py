@@ -241,51 +241,26 @@ class SauceNaoNorm:
 
 
 class TraceMoeNorm:
-    def __init__(self, data, mute=False):
-        self.origin: dict = data
-        self.From: int = data['from']  # 匹配场景的开始时间
-        self.To: int = data['to']  # 匹配场景的结束时间
-        # 匹配的Anilist ID见https://anilist.co/
-        self.anilist_id: int = data['anilist_id']
-        self.at: int = data['at']  # 匹配场景的确切时间
-        self.season: str = data['season']  # 发布时间
-        self.anime: str = data['anime']  # 番剧名字
-        self.filename: str = data['filename']  # 找到匹配项的文件名
-        self.episode: int = data['episode']  # 估计的匹配的番剧的集数
-        self.tokenthumb: str = data['tokenthumb']  # 用于生成预览的token
+    def __init__(self, data, mute, image_size):
+        self.filename: str = data['filename']  # The filename of file where the match is found
+        self.episode: int = data['episode']  # The extracted episode number from filename
+        self.From: int = data['from']  # Starting time of the matching scene (seconds)
+        self.To: int = data['to']  # Ending time of the matching scene (seconds)
         self.similarity: float = float("{:.2f}".format(
-            data['similarity'] * 100))  # 相似度，相似性低于 87% 的搜索结果可能是不正确的结果
-        self.title: str = data['title']  # 番剧名字
-        self.title_native: str = data['title_native']  # 番剧世界命名
-        self.title_chinese: str = data['title_chinese']  # 番剧中文命名
-        self.title_english: str = data['title_english']  # 番剧英文命名
-        self.title_romaji: str = data['title_romaji']  # 番剧罗马命名
+            data['similarity'] * 100))  # Shows similarity compared to the search image
+        # 匹配的Anilist ID见https://anilist.co/
+        self.anilist: str = data['anilist']  # Shows raw data from anilist
+        self.anilist_id: int = data['anilist']['id']  # Shows matching Anilist id
+        self.title: str = data['anilist']['title']  # Shows native title from anilist
+        self.title_native: str = data['anilist']['title']['native']  # Shows anime title from anilist in native
+        self.title_english: str = data['anilist']['title']['english']  # Shows anime title from anilist in english
+        self.title_romaji: str = data['anilist']['title']['romaji']  # Shows anime title from anilist in romaji
         # 匹配的MyAnimelist ID见https://myanimelist.net/
-        self.mal_id: int = data['mal_id']
-        self.synonyms: list = data['synonyms']  # 备用英文标题
-        self.synonyms_chinese: list = data['synonyms_chinese']  # 备用中文标题
-        self.is_adult: bool = data['is_adult']  # 是否R18
-        self.thumbnail: str = self._preview_image()
-        self.video_thumbnail: str = self._preview_video(mute)
-
-    def _preview_image(self):  # 图片预览图
-        # parse.quote()用于网页转码
-        url = "https://trace.moe/thumbnail.php" \
-              "?anilist_id={}&file={}&t={}&token={}".format(self.anilist_id, parse.quote(self.filename), self.at,
-                                                            self.tokenthumb)
-        return url
-
-    def _preview_video(self, mute=False):
-        """
-        创建预览视频
-        :param mute:预览视频是否静音，True为静音
-        :return: 预览视频url地址
-        """
-        url = "https://media.trace.moe/video/" \
-              f"{self.anilist_id}/{parse.quote(self.filename)}?t={self.at}&token={self.tokenthumb}"
-        if mute:
-            url = url + '&mute'
-        return url
+        self.idMal: int = data['anilist']['idMal']  # Shows matching Mal id
+        self.synonyms: list = data['anilist']['synonyms']  # Alternate english titles
+        self.isAdult: bool = data['anilist']['isAdult']  # Whether the anime is for adults
+        self.image: str = data['image'] + "&size=" + image_size
+        self.video: str = data['video'] + "&mute" if mute == True else ""
 
     @staticmethod
     def download_image(self, filename='image.png'):
